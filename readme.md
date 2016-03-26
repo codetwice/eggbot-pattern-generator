@@ -19,7 +19,7 @@ the same as those of the framework itself. You can find the requirements and a L
 For those who are not interested in deep understanding of Laravel and just want to get this website running, here is the
 short guide:
 
-1. Check out this git project to your local machine
+1. Clone this git project to your local machine
 2. Install composer as described on [getcomposer.org](https://getcomposer.org/doc/00-intro.md)
 3. Open a terminal
 4. Change to the root directory of the project
