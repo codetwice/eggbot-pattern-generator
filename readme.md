@@ -37,8 +37,8 @@ short guide:
 
 The pattern generator supports 4 patterns at the moment. 
 
-* A square pattern generator
-* A triangle pattern generator
+* A square pattern generator ([example](http://eggbot.cloudy.dyndns.org/generate/squares?squareSize=100&squareRows=4&stretchRatio=1.5&randomFactor=50&strokeWidth=5&polyOffset=15&infillDensity=10&infillDirection=0&infillOffset=5&colors=%230094cb%2C+%23c73337%2C+%2396999f%2C+%2373d500%2C+%23ad2172%2C+%23ff9800%2C+%23511700%2C+%23fc646f%2C+%2341ac3f%0A&lineColor=%23000000&drawLines=1&drawSquares=1&drawInfill=1&checkboard=random&randomSeed=))
+* A triangle pattern generator ([example](http://eggbot.cloudy.dyndns.org/generate/triangles?squareSize=150&squareRows=3&stretchRatio=1.5&randomFactor=50&strokeWidth=5&polyOffset=15&infillDensity=10&infillDirection=0&infillOffset=5&colors=%230094cb%2C+%23c73337%2C+%2396999f%2C+%2373d500%2C+%23ad2172%2C+%23ff9800%2C+%23511700%2C+%23fc646f%2C+%2341ac3f%0A&lineColor=%23000000&drawLines=1&drawTriangles=1&drawInfill=1&randomSeed=))
 * A pixel art generator which is exact but results in slow plotting
 * Another pixel art generator which is less exact but is highly optimized for faster printing speed. 
 
