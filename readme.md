@@ -19,7 +19,7 @@ the same as those of the framework itself. You can find the requirements and a L
 For those who are not interested in deep understanding of Laravel and just want to get this website running, here is the
 short guide:
 
-1. Clone this git project to your local machine
+1. Check out this git project to your local machine
 2. Install composer as described on [getcomposer.org](https://getcomposer.org/doc/00-intro.md)
 3. Open a terminal
 4. Change to the root directory of the project
@@ -32,10 +32,6 @@ short guide:
         php artisan serve
 
 7. Start a browser and go to http://localhost:8000
-
-## Official Documentation
-
-Documentation for the Laravel framework can be found on the [Laravel website](http://laravel.com/docs).
 
 ## Usage
 
@@ -52,6 +48,24 @@ When you are happy with the settings, hit the "Generate" button. It will open a 
 Open it in InkScape and send it to the EggBot using the Eggbot Inkscape Extensions (see <https://github.com/evil-mad/EggBot/releases/>)
 
 You can find more information about how to use your Eggbot, please see the [official Eggbot documentation](http://wiki.evilmadscientist.com/The_Original_Egg-Bot_Kit#Tutorials)
+
+## Configuration
+
+The configuration of the website can be done by creating a file called .env in the root of the project. A .env.example file has been supplied with the project to serve as example configuration. 
+
+There is a single configuration setting implemented atm: 
+
+###ENABLED_GENERATORS
+This setting can be used to limit the generators available on the website. It takes a comma-separated list of generator names. When set, only the generators listed here will be pickable from the generator select box. 
+
+Example:
+
+    ENABLED_GENERATORS = triangles, squares, pixelart_v1, pixelart_v2
+
+
+## Official Documentation
+
+Documentation for the Laravel framework can be found on the [Laravel website](http://laravel.com/docs).
 
 ### License
 
