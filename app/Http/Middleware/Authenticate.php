@@ -1,50 +1,17 @@
-<?php namespace App\Http\Middleware;
+<?php
 
-use Closure;
-use Illuminate\Contracts\Auth\Guard;
+namespace App\Http\Middleware;
 
-class Authenticate {
+use Illuminate\Auth\Middleware\Authenticate as Middleware;
 
-	/**
-	 * The Guard implementation.
-	 *
-	 * @var Guard
-	 */
-	protected $auth;
+class Authenticate extends Middleware
+{
+    protected function redirectTo($request): ?string
+    {
+        if (! $request->expectsJson()) {
+            return route('login');
+        }
 
-	/**
-	 * Create a new filter instance.
-	 *
-	 * @param  Guard  $auth
-	 * @return void
-	 */
-	public function __construct(Guard $auth)
-	{
-		$this->auth = $auth;
-	}
-
-	/**
-	 * Handle an incoming request.
-	 *
-	 * @param  \Illuminate\Http\Request  $request
-	 * @param  \Closure  $next
-	 * @return mixed
-	 */
-	public function handle($request, Closure $next)
-	{
-		if ($this->auth->guest())
-		{
-			if ($request->ajax())
-			{
-				return response('Unauthorized.', 401);
-			}
-			else
-			{
-				return redirect()->guest('auth/login');
-			}
-		}
-
-		return $next($request);
-	}
-
+        return null;
+    }
 }

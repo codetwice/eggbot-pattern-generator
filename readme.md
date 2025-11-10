@@ -8,13 +8,13 @@ At the moment it is able to generate 4 different patterns:
 * A colorful pattern made up by randomized triangles
 * 2 generators which take low res bitmap files and generate large, oldschool pixely looking SVG based on them that can be plotted right away.
 
-The website itself is a web application running on the Laravel 5.0 framework.
+The website itself is a web application running on the Laravel 12 framework.
 
 ## Installation
 
-The web application is based on the Laravel 5.0 framework. The installation requirements of the pattern generator are
+The web application is based on the Laravel 12 framework. The installation requirements of the pattern generator are
 the same as those of the framework itself. You can find the requirements and a Laravel installation guide at the
-[Laravel website](https://laravel.com/docs/5.0).
+[Laravel website](https://laravel.com/docs/12.x).
 
 For those who are not interested in deep understanding of Laravel and just want to get this website running, here is the
 short guide:

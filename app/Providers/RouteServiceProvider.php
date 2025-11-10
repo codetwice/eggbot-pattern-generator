@@ -1,44 +1,23 @@
-<?php namespace App\Providers;
+<?php
 
-use Illuminate\Routing\Router;
+namespace App\Providers;
+
 use Illuminate\Foundation\Support\Providers\RouteServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Route;
 
-class RouteServiceProvider extends ServiceProvider {
+class RouteServiceProvider extends ServiceProvider
+{
+    public const HOME = '/';
 
-	/**
-	 * This namespace is applied to the controller routes in your routes file.
-	 *
-	 * In addition, it is set as the URL generator's root namespace.
-	 *
-	 * @var string
-	 */
-	protected $namespace = 'App\Http\Controllers';
+    public function boot(): void
+    {
+        $this->routes(function () {
+            Route::middleware('api')
+                ->prefix('api')
+                ->group(base_path('routes/api.php'));
 
-	/**
-	 * Define your route model bindings, pattern filters, etc.
-	 *
-	 * @param  \Illuminate\Routing\Router  $router
-	 * @return void
-	 */
-	public function boot(Router $router)
-	{
-		parent::boot($router);
-
-		//
-	}
-
-	/**
-	 * Define the routes for the application.
-	 *
-	 * @param  \Illuminate\Routing\Router  $router
-	 * @return void
-	 */
-	public function map(Router $router)
-	{
-		$router->group(['namespace' => $this->namespace], function($router)
-		{
-			require app_path('Http/routes.php');
-		});
-	}
-
+            Route::middleware('web')
+                ->group(base_path('routes/web.php'));
+        });
+    }
 }

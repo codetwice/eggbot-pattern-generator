@@ -42,8 +42,8 @@
 				return true;
 			}
 
-			$.ajax({
-				url: '{{ action('HomeController@getGenerators') }}',
+                        $.ajax({
+                                url: "{{ action([\App\Http\Controllers\HomeController::class, 'getGenerators']) }}",
 				method: 'get',
 				success: function(result) {
 					$.each(result, function(index, generator) {
@@ -100,7 +100,8 @@
 				</div>
 			</div>
 		</form>
-		<form data-bind="attr: { action: generator() ? generator().url : '' }, with: generator" method="post" id="parameterForm">
+                <form data-bind="attr: { action: generator() ? generator().url : '' }, with: generator" method="post" id="parameterForm">
+                        @csrf
 			<div class="panel panel-default">
 				<div class="panel-heading">Pattern paremeters</div>
 				<div class="panel-body">
