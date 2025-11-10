@@ -4,16 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Eggbot\Generators\GeneratorBase;
 use App\Eggbot\Generators\GeneratorParameter;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
+use App\Http\Request;
+use App\Http\Response;
+use App\Support\Arr;
+use App\Support\Collection;
 
 class HomeController extends Controller
 {
     public function index(): Response
     {
-        return response()->view('welcome');
+        return view('welcome');
     }
 
     public function getGenerators(): Response
@@ -36,7 +36,7 @@ class HomeController extends Controller
             ];
         })->values();
 
-        return response()->json($generators);
+        return json($generators->all());
     }
 
     public function generateSvg(Request $request, string $id): Response
@@ -107,7 +107,7 @@ class HomeController extends Controller
 
     public function visualizeSvg(): Response
     {
-        return response()->view('visualizer');
+        return view('visualizer');
     }
 
     /**

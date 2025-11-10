@@ -1,11 +1,12 @@
 <?php
 
 use App\Http\Controllers\HomeController;
-use Illuminate\Support\Facades\Route;
 
-Route::get('/', [HomeController::class, 'index']);
-Route::get('/generate/{id}', [HomeController::class, 'generateSvg']);
-Route::post('/generate/{id}', [HomeController::class, 'prepareSvg']);
-Route::get('/generate/{id}/download', [HomeController::class, 'downloadSvg']);
-Route::get('/generators', [HomeController::class, 'getGenerators']);
-Route::get('/visualizer', [HomeController::class, 'visualizeSvg']);
+/** @var App\Routing\Router $router */
+
+$router->get('/', [HomeController::class, 'index']);
+$router->get('/generate/{id}', [HomeController::class, 'generateSvg']);
+$router->post('/generate/{id}', [HomeController::class, 'prepareSvg']);
+$router->get('/generate/{id}/download', [HomeController::class, 'downloadSvg']);
+$router->get('/generators', [HomeController::class, 'getGenerators']);
+$router->get('/visualizer', [HomeController::class, 'visualizeSvg']);

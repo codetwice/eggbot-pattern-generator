@@ -1,15 +1,9 @@
 <?php
 
-define('LARAVEL_START', microtime(true));
-
-if (file_exists($maintenance = __DIR__ . '/../storage/framework/maintenance.php')) {
-    require $maintenance;
-}
-
 require __DIR__ . '/../vendor/autoload.php';
 
-$app = require_once __DIR__ . '/../bootstrap/app.php';
+$app = require __DIR__ . '/../bootstrap/app.php';
 
-$app->handleRequest(
-    request: Illuminate\Http\Request::capture()
-)->send();
+$request = App\Http\Request::fromGlobals();
+$response = $app->handle($request);
+$response->send();
