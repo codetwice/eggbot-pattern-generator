@@ -1,205 +1,174 @@
-<?php 
+<?php
 
 namespace App\Http\Controllers;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use tml\Eggbot\Shapes\Point;
 
-class HomeController extends Controller {
+use App\Eggbot\Generators\GeneratorBase;
+use App\Eggbot\Generators\GeneratorParameter;
+use App\Http\Request;
+use App\Http\Response;
+use App\Support\Arr;
+use App\Support\Collection;
 
-	/*
-	|--------------------------------------------------------------------------
-	| Welcome Controller
-	|--------------------------------------------------------------------------
-	|
-	| This controller renders the "marketing page" for the application and
-	| is configured to only allow guests. Like most of the other sample
-	| controllers, you are free to modify or remove it as you desire.
-	|
-	*/
+class HomeController extends Controller
+{
+    public function index(): Response
+    {
+        return view('welcome');
+    }
 
-	/**
-	 * Create a new controller instance.
-	 *
-	 * @return void
-	 */
-	public function __construct()
-	{
-		$this->middleware('guest');
-	}
+    public function getGenerators(): Response
+    {
+        $definitions = $this->availableGenerators();
 
-	/**
-	 * Show the application welcome screen to the user.
-	 *
-	 * @return Response
-	 */
-	public function index()
-	{
-		return view('welcome');
-	}
+        $generators = collect($definitions)->map(function (array $definition) {
+            /** @var GeneratorBase $instance */
+            $instance = app($definition['class']);
 
-	public function getGenerators() {
-		$classes = $this->getGeneratorClasses();
+            $parameters = collect($instance->getRequiredParameters());
+            $requiresPreparation = $parameters->contains(fn (GeneratorParameter $parameter) => $parameter->type === 'file');
 
-		$result = [];
-		foreach ($classes as $classData) {
-			$class = $classData['class'];
-			$id = $classData['id'];
-			$requiresPreparation = false;
+            return [
+                'id' => $definition['id'],
+                'url' => action([self::class, 'generateSvg'], ['id' => $definition['id']]),
+                'description' => $definition['description'],
+                'parameters' => $parameters->values()->all(),
+                'requiresPreparation' => $requiresPreparation,
+            ];
+        })->values();
 
-			$instance = new $class;
-			$parameters = $instance->getRequiredParameters();
-			foreach ($parameters as $parameter) {
-				if ($parameter->type == 'file') {
-					$requiresPreparation = true;
-				}
-			}
+        return json($generators->all());
+    }
 
-			$result[] = [
-				'id' =>$id,
-				'url' => action('HomeController@generateSvg', $id),
-				'description' => $classData['description'],
-				'parameters' => $parameters, 
-				'requiresPreparation' => $requiresPreparation
-			];
-		}
+    public function generateSvg(Request $request, string $id): Response
+    {
+        if ($request->filled('randomSeed')) {
+            srand((int) $request->input('randomSeed'));
+        }
 
-		return response()->json($result);
-	}
+        $generator = $this->resolveGenerator($id, $request->all());
 
-	public function generateSvg(Request $request, $id) {
-		if ($request->has('randomSeed')) {
-			srand($request->input('randomSeed'));
-		}
+        $drawing = $generator->generate();
+        $svg = $drawing->getSvg();
 
-		$parameters = $request->all();
-		$generator = $this->getGeneratorClassById($id);
-		foreach ($parameters as $name=>$value) {
-			$generator->setParameter($name, $value);
-		}
+        return response($svg->saveXml(), 200)
+            ->header('Content-Type', 'image/svg+xml');
+    }
 
-		$drawing = $generator->generate();
-		$svg = $drawing->getSvg();
-		return response($svg->saveXml(), 200)
-			->header('Content-Type', 'image/svg+xml');
-	}
+    public function prepareSvg(Request $request, string $id): Response
+    {
+        $generator = $this->resolveGenerator($id, $request->except(['_token']));
 
-	public function prepareSvg(Request $request, $id) {
-		$parameters = $request->all();
+        foreach ($generator->getRequiredParameters() as $parameter) {
+            if ($parameter->type === 'file' && $request->hasFile($parameter->name)) {
+                $file = $request->file($parameter->name);
+                $extension = match ($file?->getMimeType()) {
+                    'image/png' => 'png',
+                    'image/gif' => 'gif',
+                    default => null,
+                };
 
-		// load the parameters into the generator
-		$generator = $this->getGeneratorClassById($id);
-		foreach ($parameters as $name=>$value) {
-			$generator->setParameter($name, $value);
-		}
+                if ($extension) {
+                    $filename = sprintf('%06d.%s', random_int(100000, 999999), $extension);
+                    $file->move(storage_path('tmp'), $filename);
+                    $generator->setParameter($parameter->name, $filename);
+                }
+            }
+        }
 
-		// handle file uploads
-		foreach ($generator->getRequiredParameters() as $parameter) {
-			if ($parameter->type == 'file' && $request->hasFile($parameter->name)) {
-				$file = $request->file($parameter->name);
-				$mime = $file->getMimeType();
-				if ($mime == 'image/png') {
-					$targetFilename = rand(100000, 999999) . '.png';
-				} else if ($mime == 'image/gif') {
-					$targetFilename = rand(100000, 999999) . '.gif';
-				} else {
-					$targetFilename = null;
-				}
+        $errors = $generator->validate();
+        if (empty($errors)) {
+            $parameters = Arr::add($generator->getAllParameters(), 'id', $id);
 
-				if ($targetFilename) {
-					$path = storage_path() . '/tmp';
-					$file->move($path, $targetFilename);
-					$generator->setParameter($parameter->name, $targetFilename);
-				}
-			}
-		}
+            return response(action([self::class, 'generateSvg'], $parameters));
+        }
 
-		// create the URL to get the svg from
-		$errors = $generator->validate();
-		if (count($errors) == 0) {
-			$generatorParameters = $generator->getAllParameters();
-			$generatorParameters['id'] = $id;
-			return action('HomeController@generateSvg', $generatorParameters);
-		} else {
-			return response('Error', 403);
-		}
-	}
+        return response('Error', 403);
+    }
 
-	public function downloadSvg(Request $request, $id) {
-		if ($request->has('randomSeed')) {
-			srand($request->input('randomSeed'));
-		}
+    public function downloadSvg(Request $request, string $id): Response
+    {
+        if ($request->filled('randomSeed')) {
+            srand((int) $request->input('randomSeed'));
+        }
 
-		$parameters = $request->all();
-		$generator = $this->getGeneratorClassById($id);
-		foreach ($parameters as $name=>$value) {
-			$generator->setParameter($name, $value);
-		}
+        $generator = $this->resolveGenerator($id, $request->all());
 
-		$drawing = $generator->generate();
-		$svg = $drawing->getSvg();
-		return response($svg->saveXml(), 200)
-			->header('Pragma', 'public')
-			->header('Expires', '0')
-			->header('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
-			->header('Content-Type', 'application/force-download')
-			->header('Content-Type', 'application/octet-stream')
-			->header('Content-Type', 'application/download')
-			->header('Content-Disposition:', 'attachment; filename=' . $id . '.svg')
-			->header('Content-Transfer-Encoding', 'binary');
-	}
+        $drawing = $generator->generate();
+        $svg = $drawing->getSvg();
 
-	public function visualizeSvg() {
-		return view('visualizer');
-	}
+        return response($svg->saveXml(), 200)
+            ->header('Pragma', 'public')
+            ->header('Expires', '0')
+            ->header('Cache-Control', 'must-revalidate, post-check=0, pre-check=0')
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Content-Disposition', 'attachment; filename=' . $id . '.svg')
+            ->header('Content-Transfer-Encoding', 'binary');
+    }
 
-	private function getGeneratorClasses() {
-		$classes = [ 
-			[ 
-				'id' => 'triangles', 
-				'class' => 'tml\Eggbot\Generators\TriangleGenerator',
-				'description' => 'Triangle pattern'
-			],
-			[ 
-				'id' => 'squares', 
-				'class' => 'tml\Eggbot\Generators\SquareGenerator',
-				'description' => 'Square pattern'
-			],
-			[ 
-				'id' => 'pixelart_v1', 
-				'class' => 'tml\Eggbot\Generators\PixelArtGeneratorV1',
-				'description' => 'Pixel art (slow and accurate)'
-			],
-			[ 
-				'id' => 'pixelart_v2', 
-				'class' => 'tml\Eggbot\Generators\PixelArtGeneratorV2',
-				'description' => 'Pixel art (fast and efficient)'
-			]			
-		];
+    public function visualizeSvg(): Response
+    {
+        return view('visualizer');
+    }
 
-		$enabled = env('ENABLED_GENERATORS');
-		if ($enabled) {
-			$enabled = explode(',', $enabled);
-			foreach ($classes as $i => $def) {
-				if (!in_array($def['id'], $enabled)) {
-					unset($classes[$i]);
-				}
-			}
-		}
+    /**
+     * @return array<int, array{id: string, class: class-string<GeneratorBase>, description: string}>
+     */
+    protected function availableGenerators(): array
+    {
+        $generators = [
+            [
+                'id' => 'triangles',
+                'class' => \App\Eggbot\Generators\TriangleGenerator::class,
+                'description' => 'Triangle pattern',
+            ],
+            [
+                'id' => 'squares',
+                'class' => \App\Eggbot\Generators\SquareGenerator::class,
+                'description' => 'Square pattern',
+            ],
+            [
+                'id' => 'pixelart_v1',
+                'class' => \App\Eggbot\Generators\PixelArtGeneratorV1::class,
+                'description' => 'Pixel art (slow and accurate)',
+            ],
+            [
+                'id' => 'pixelart_v2',
+                'class' => \App\Eggbot\Generators\PixelArtGeneratorV2::class,
+                'description' => 'Pixel art (fast and efficient)',
+            ],
+        ];
 
-		return $classes;
-	}
+        $enabled = config('app.enabled_generators');
 
-	private function getGeneratorClassById($id) {
-		$classes = $this->getGeneratorClasses();
+        if ($enabled) {
+            $allowed = Collection::make(explode(',', $enabled))
+                ->map(fn ($id) => trim($id))
+                ->filter()
+                ->all();
 
-		foreach ($classes as $classData) {
-			if ($classData['id'] == $id) {
-				$className = $classData['class'];
-				return new $className;
-			}
-		}
+            $generators = array_values(array_filter(
+                $generators,
+                fn ($generator) => in_array($generator['id'], $allowed, true)
+            ));
+        }
 
-		return null;
-	}
+        return $generators;
+    }
+
+    protected function resolveGenerator(string $id, array $parameters): GeneratorBase
+    {
+        $generator = Collection::make($this->availableGenerators())
+            ->firstWhere('id', $id);
+
+        abort_unless($generator, 404);
+
+        /** @var GeneratorBase $instance */
+        $instance = app($generator['class']);
+
+        foreach ($parameters as $name => $value) {
+            $instance->setParameter($name, $value);
+        }
+
+        return $instance;
+    }
 }
